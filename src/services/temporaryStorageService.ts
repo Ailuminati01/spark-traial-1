@@ -1,4 +1,5 @@
 import { securityService } from './securityService';
+import { StampSignatureAnalysisResult } from './stampSignatureService';
 
 interface TemporaryDocument {
   id: string;
@@ -12,6 +13,7 @@ interface TemporaryDocument {
   createdAt: string;
   userId: string;
   status: 'pending_review' | 'approved' | 'rejected';
+  stampSignatureResult?: StampSignatureAnalysisResult;
 }
 
 class TemporaryStorageService {
@@ -23,7 +25,8 @@ class TemporaryStorageService {
     extractedText: string,
     azureAIResult: any,
     openAIAnalysis: any,
-    userId: string
+    userId: string,
+    stampSignatureResult?: StampSignatureAnalysisResult
   ): string {
     const documentId = this.generateId('temp_doc');
     
@@ -44,7 +47,8 @@ class TemporaryStorageService {
       confidence: openAIAnalysis.confidence,
       createdAt: new Date().toISOString(),
       userId,
-      status: 'pending_review'
+      status: 'pending_review',
+      stampSignatureResult
     };
 
     // Encrypt sensitive data
@@ -62,7 +66,10 @@ class TemporaryStorageService {
         fileName: file.name,
         confidence: tempDoc.confidence,
         templateSuggested: openAIAnalysis.templateMatch?.name,
-        fieldsExtracted: Object.keys(completeFields).length
+        fieldsExtracted: Object.keys(completeFields).length,
+        stampDetected: stampSignatureResult?.Stamp.Status === 'Present',
+        signatureDetected: stampSignatureResult?.Signature.Status === 'Present',
+        stampValidated: stampSignatureResult?.StampValidation === 'Y'
       }
     );
 
@@ -165,7 +172,12 @@ class TemporaryStorageService {
       'temporary_document_approved',
       'document',
       documentId,
-      { approvedBy: userId }
+      { 
+        approvedBy: userId,
+        stampDetected: doc.stampSignatureResult?.Stamp.Status === 'Present',
+        signatureDetected: doc.stampSignatureResult?.Signature.Status === 'Present',
+        stampValidated: doc.stampSignatureResult?.StampValidation === 'Y'
+      }
     );
 
     return true;

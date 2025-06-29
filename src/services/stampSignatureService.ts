@@ -25,33 +25,39 @@ interface StampSignatureAnalysisResult {
 const OFFICIAL_STAMP_MASTER_LIST = [
   {
     id: 'stamp_1',
-    name: 'Officer Commanding 14th BN A.P.S.P. Ananthapuramu',
+    name: 'OFFICER COMMANDING 14th BN A.P.S.P. ANANTHAPURAMU',
     keywords: ['OFFICER COMMANDING', '14TH BN', 'A.P.S.P', 'ANANTHAPURAMU'],
     pattern: /OFFICER\s+COMMANDING.*14.*BN.*A\.P\.S\.P.*ANANTHAPURAMU/i
   },
   {
     id: 'stamp_2',
-    name: 'Addl. Commissioner of Police, Vijayawada City',
-    keywords: ['ADDL', 'COMMISSIONER', 'POLICE', 'VIJAYAWADA', 'CITY'],
-    pattern: /ADDL.*COMMISSIONER.*POLICE.*VIJAYAWADA.*CITY/i
-  },
-  {
-    id: 'stamp_3',
-    name: 'Addl. Director General of Police, APSP Battalions, Mangalagiri',
-    keywords: ['ADDL', 'DIRECTOR GENERAL', 'POLICE', 'APSP', 'BATTALIONS', 'MANGALAGIRI'],
-    pattern: /ADDL.*DIRECTOR\s+GENERAL.*POLICE.*APSP.*BATTALIONS.*MANGALAGIRI/i
-  },
-  {
-    id: 'stamp_4',
     name: 'STATE OFFICER TO ADGP APSP HEAD OFFICE MANGALAGIRI',
     keywords: ['STATE OFFICER', 'ADGP', 'APSP', 'HEAD OFFICE', 'MANGALAGIRI'],
     pattern: /STATE\s+OFFICER.*ADGP.*APSP.*HEAD\s+OFFICE.*MANGALAGIRI/i
   },
   {
-    id: 'stamp_5',
+    id: 'stamp_3',
     name: 'Inspector General of Police APSP Bns, Amaravathi',
     keywords: ['INSPECTOR GENERAL', 'POLICE', 'APSP', 'BNS', 'AMARAVATHI'],
     pattern: /INSPECTOR\s+GENERAL.*POLICE.*APSP.*BNS.*AMARAVATHI/i
+  },
+  {
+    id: 'stamp_4',
+    name: 'Dy. Inspector General of Police-IV APSP Battalions, Mangalagiri',
+    keywords: ['DY', 'INSPECTOR GENERAL', 'POLICE', 'APSP', 'BATTALIONS', 'MANGALAGIRI'],
+    pattern: /DY.*INSPECTOR\s+GENERAL.*POLICE.*APSP.*BATTALIONS.*MANGALAGIRI/i
+  },
+  {
+    id: 'stamp_5',
+    name: 'Sd/- B. Sreenivasulu, IPS., Addl. Commissioner of Police, Vijayawada City',
+    keywords: ['SD', 'SREENIVASULU', 'IPS', 'COMMISSIONER', 'POLICE', 'VIJAYAWADA'],
+    pattern: /SD.*SREENIVASULU.*IPS.*COMMISSIONER.*POLICE.*VIJAYAWADA/i
+  },
+  {
+    id: 'stamp_6',
+    name: 'Dr. SHANKHABRATA BAGCHI IPS., Addl. Director General of Police, APSP Battalions',
+    keywords: ['SHANKHABRATA', 'BAGCHI', 'IPS', 'DIRECTOR GENERAL', 'POLICE', 'APSP', 'BATTALIONS'],
+    pattern: /SHANKHABRATA.*BAGCHI.*IPS.*DIRECTOR\s+GENERAL.*POLICE.*APSP.*BATTALIONS/i
   }
 ];
 
