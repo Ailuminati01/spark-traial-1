@@ -1,26 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { 
-  Upload, 
-  QrCode, 
-  Camera, 
-  FileImage, 
-  Loader2, 
-  AlertCircle, 
-  CheckCircle, 
-  Cpu, 
-  Database, 
-  Image as ImageIcon, 
-  Box, 
-  Zap, 
-  Eye, 
-  Edit3, 
-  Save, 
-  X, 
-  Info, 
-  TestTube, 
-  FolderSync as Sync, 
-  FileText 
-} from 'lucide-react';
+import { Upload, QrCode, Camera, FileImage, Loader2, AlertCircle, CheckCircle, Cpu, Database, Image as ImageIcon, Box, Zap, Eye, Edit3, Save, X, Info, TestTube, FolderSync as Sync, FileText, Stamp, PenTool } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDocuments } from '../../contexts/DocumentContext';
 import { azureAIService, AzureAIResult } from '../../services/azureAIService';
@@ -28,7 +7,8 @@ import { openAIService, OpenAIAnalysisResult } from '../../services/openAIServic
 import { temporaryStorageService, TemporaryDocument } from '../../services/temporaryStorageService';
 import { databaseService, StoredDocument } from '../../services/databaseService';
 import { supabaseService } from '../../services/supabaseService';
-import { stampSignatureService } from '../../services/stampSignatureService';
+import { stampSignatureService, StampSignatureAnalysisResult } from '../../services/stampSignatureService';
+import { StampSignatureAnalyzer } from './StampSignatureAnalyzer';
 
 export function UploadInterface() {
   const { user } = useAuth();
@@ -49,7 +29,7 @@ export function UploadInterface() {
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isPdf, setIsPdf] = useState(false);
+  const [showStampAnalyzer, setShowStampAnalyzer] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
@@ -62,6 +42,7 @@ export function UploadInterface() {
       const azureHealth = await azureAIService.checkServiceHealth();
       const openAIHealth = await openAIService.checkServiceHealth();
       const supabaseHealthCheck = await supabaseService.checkConnection();
+      const stampServiceHealth = await stampSignatureService.checkServiceHealth();
       
       setAzureServiceHealth(azureHealth);
       setOpenAIServiceHealth(openAIHealth);
@@ -70,7 +51,8 @@ export function UploadInterface() {
       console.log('Service Health Check Results:', {
         azure: azureHealth,
         openAI: openAIHealth,
-        supabase: supabaseHealthCheck
+        supabase: supabaseHealthCheck,
+        stampService: stampServiceHealth
       });
     } catch (error) {
       console.error('Service health check failed:', error);
@@ -162,12 +144,10 @@ export function UploadInterface() {
         // For PDFs, we'll use the file URL directly
         const url = URL.createObjectURL(file);
         setPreviewUrl(url);
-        setIsPdf(true);
       } else {
         // For images, create object URL
         const url = URL.createObjectURL(file);
         setPreviewUrl(url);
-        setIsPdf(false);
       }
       
       processDocument(file);
@@ -178,7 +158,7 @@ export function UploadInterface() {
     if (!user) return;
     
     setIsProcessing(true);
-    setProcessingStage('Initializing document processing...');
+    setProcessingStage('Initializing Azure AI processing...');
     
     try {
       // Step 1: Azure AI OCR processing
@@ -298,7 +278,70 @@ export function UploadInterface() {
 
       console.log('Creating stored document object...');
       
-      // Create stored document with stamp/signature validation data
+      // Create validation metadata if stamp/signature results exist
+      let validationMetadata = undefined;
+      if (selectedTempDoc.stampSignatureResult) {
+        const now = new Date().toISOString();
+        validationMetadata = {
+          stampValidation: {
+            detected: [{
+              id: `stamp_${Date.now()}`,
+              type: 'official_stamp',
+              boundingBox: {
+                x: selectedTempDoc.stampSignatureResult.Stamp.Coordinates?.[0] || 0,
+                y: selectedTempDoc.stampSignatureResult.Stamp.Coordinates?.[1] || 0,
+                width: selectedTempDoc.stampSignatureResult.Stamp.Coordinates?.[2] || 0,
+                height: selectedTempDoc.stampSignatureResult.Stamp.Coordinates?.[3] || 0
+              },
+              confidence: selectedTempDoc.stampSignatureResult.Stamp.Confidence || 0.8,
+              imageData: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+              location: "Bottom right of document",
+              matchesMasterList: selectedTempDoc.stampSignatureResult.StampValidation === 'Y',
+              matchedStampType: selectedTempDoc.stampSignatureResult.MatchedStampType
+            }],
+            status: selectedTempDoc.stampSignatureResult.Stamp.Status,
+            count: selectedTempDoc.stampSignatureResult.Stamp.Status === 'Present' ? 1 : 0,
+            validationTimestamp: now,
+            matchesMasterList: selectedTempDoc.stampSignatureResult.StampValidation === 'Y'
+          },
+          signatureValidation: {
+            detected: [{
+              id: `signature_${Date.now()}`,
+              type: 'handwritten_signature',
+              boundingBox: {
+                x: selectedTempDoc.stampSignatureResult.Signature.Coordinates?.[0] || 0,
+                y: selectedTempDoc.stampSignatureResult.Signature.Coordinates?.[1] || 0,
+                width: selectedTempDoc.stampSignatureResult.Signature.Coordinates?.[2] || 0,
+                height: selectedTempDoc.stampSignatureResult.Signature.Coordinates?.[3] || 0
+              },
+              confidence: selectedTempDoc.stampSignatureResult.Signature.Confidence || 0.7,
+              imageData: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+              location: "Bottom of document"
+            }],
+            status: selectedTempDoc.stampSignatureResult.Signature.Status,
+            count: selectedTempDoc.stampSignatureResult.Signature.Status === 'Present' ? 1 : 0,
+            validationTimestamp: now
+          },
+          overallValidation: {
+            isValid: selectedTempDoc.stampSignatureResult.Stamp.Status === 'Present' && 
+                    selectedTempDoc.stampSignatureResult.Signature.Status === 'Present' && 
+                    selectedTempDoc.stampSignatureResult.StampValidation === 'Y',
+            completeness: selectedTempDoc.stampSignatureResult.Stamp.Status === 'Present' && 
+                         selectedTempDoc.stampSignatureResult.Signature.Status === 'Present' ? 100 : 
+                         selectedTempDoc.stampSignatureResult.Stamp.Status === 'Present' || 
+                         selectedTempDoc.stampSignatureResult.Signature.Status === 'Present' ? 50 : 0,
+            missingElements: [
+              ...(selectedTempDoc.stampSignatureResult.Stamp.Status === 'Absent' ? ['Official Stamp'] : []),
+              ...(selectedTempDoc.stampSignatureResult.Signature.Status === 'Absent' ? ['Signature'] : []),
+              ...(selectedTempDoc.stampSignatureResult.StampValidation === 'N' ? ['Valid Stamp'] : [])
+            ],
+            validatedAt: now,
+            validatedBy: user.fullName
+          }
+        };
+      }
+      
+      // Create stored document
       const storedDocument: StoredDocument = {
         id: `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         type: selectedTempDoc.suggestedTemplate || documentTypes[0],
@@ -309,7 +352,9 @@ export function UploadInterface() {
           'openai-analyzed',
           'clerk-approved',
           'template-mapped',
-          'stamp-signature-validated'
+          ...(selectedTempDoc.stampSignatureResult?.Stamp.Status === 'Present' ? ['stamp-detected'] : []),
+          ...(selectedTempDoc.stampSignatureResult?.Signature.Status === 'Present' ? ['signature-detected'] : []),
+          ...(selectedTempDoc.stampSignatureResult?.StampValidation === 'Y' ? ['stamp-validated'] : [])
         ],
         fields: isEditing ? editedFields : selectedTempDoc.extractedFields,
         ocrRawText: selectedTempDoc.extractedText,
@@ -350,66 +395,7 @@ export function UploadInterface() {
             openAIAnalyzed: true,
             templateMapped: true,
             fieldMappingDetails: selectedTempDoc.openAIAnalysis.fieldMappingDetails,
-            validationMetadata: {
-              stampValidation: {
-                status: selectedTempDoc.stampSignatureResult?.Stamp.Status || 'Absent',
-                count: selectedTempDoc.stampSignatureResult?.Stamp.Status === 'Present' ? 1 : 0,
-                validationTimestamp: new Date().toISOString(),
-                matchesMasterList: selectedTempDoc.stampSignatureResult?.StampValidation === 'Y',
-                detected: selectedTempDoc.stampSignatureResult?.Stamp.Status === 'Present' ? [
-                  {
-                    id: `stamp_${Date.now()}`,
-                    type: 'official_stamp',
-                    boundingBox: {
-                      x: selectedTempDoc.stampSignatureResult?.Stamp.Coordinates?.[0] || 0,
-                      y: selectedTempDoc.stampSignatureResult?.Stamp.Coordinates?.[1] || 0,
-                      width: selectedTempDoc.stampSignatureResult?.Stamp.Coordinates?.[2] || 0,
-                      height: selectedTempDoc.stampSignatureResult?.Stamp.Coordinates?.[3] || 0
-                    },
-                    confidence: 0.85,
-                    imageData: previewUrl,
-                    location: "Bottom right of document",
-                    matchesMasterList: selectedTempDoc.stampSignatureResult?.StampValidation === 'Y',
-                    matchedStampType: selectedTempDoc.stampSignatureResult?.MatchedStampType
-                  }
-                ] : []
-              },
-              signatureValidation: {
-                status: selectedTempDoc.stampSignatureResult?.Signature.Status || 'Absent',
-                count: selectedTempDoc.stampSignatureResult?.Signature.Status === 'Present' ? 1 : 0,
-                validationTimestamp: new Date().toISOString(),
-                detected: selectedTempDoc.stampSignatureResult?.Signature.Status === 'Present' ? [
-                  {
-                    id: `signature_${Date.now()}`,
-                    type: 'handwritten_signature',
-                    boundingBox: {
-                      x: selectedTempDoc.stampSignatureResult?.Signature.Coordinates?.[0] || 0,
-                      y: selectedTempDoc.stampSignatureResult?.Signature.Coordinates?.[1] || 0,
-                      width: selectedTempDoc.stampSignatureResult?.Signature.Coordinates?.[2] || 0,
-                      height: selectedTempDoc.stampSignatureResult?.Signature.Coordinates?.[3] || 0
-                    },
-                    confidence: 0.78,
-                    imageData: previewUrl,
-                    location: "Bottom of document"
-                  }
-                ] : []
-              },
-              overallValidation: {
-                isValid: selectedTempDoc.stampSignatureResult?.StampValidation === 'Y' && 
-                         selectedTempDoc.stampSignatureResult?.Stamp.Status === 'Present' && 
-                         selectedTempDoc.stampSignatureResult?.Signature.Status === 'Present',
-                completeness: selectedTempDoc.stampSignatureResult?.StampValidation === 'Y' ? 100 : 
-                             (selectedTempDoc.stampSignatureResult?.Stamp.Status === 'Present' ? 50 : 0) + 
-                             (selectedTempDoc.stampSignatureResult?.Signature.Status === 'Present' ? 30 : 0),
-                missingElements: [
-                  ...(selectedTempDoc.stampSignatureResult?.Stamp.Status !== 'Present' ? ['Official Stamp'] : []),
-                  ...(selectedTempDoc.stampSignatureResult?.Signature.Status !== 'Present' ? ['Signature'] : []),
-                  ...(selectedTempDoc.stampSignatureResult?.StampValidation !== 'Y' ? ['Valid Stamp'] : [])
-                ],
-                validatedAt: new Date().toISOString(),
-                validatedBy: user.fullName
-              }
-            }
+            validationMetadata: validationMetadata
           },
           boundingBoxes: []
         }
@@ -520,10 +506,12 @@ export function UploadInterface() {
   const renderDocumentPreview = () => {
     if (!selectedFile || !previewUrl) return null;
 
+    const isPDF = selectedFile.type === 'application/pdf';
+
     return (
       <div className="border rounded-lg overflow-hidden relative bg-gray-50">
         <div className="relative w-full h-96">
-          {isPdf ? (
+          {isPDF ? (
             <div className="w-full h-full flex flex-col">
               {/* PDF Header */}
               <div className="bg-gray-800 text-white px-4 py-2 flex items-center justify-between">
@@ -557,6 +545,26 @@ export function UploadInterface() {
       </div>
     );
   };
+
+  if (showStampAnalyzer) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">Stamp & Signature Analysis</h2>
+            <button
+              onClick={() => setShowStampAnalyzer(false)}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            >
+              Back to Upload
+            </button>
+          </div>
+        </div>
+        
+        <StampSignatureAnalyzer />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -639,7 +647,7 @@ export function UploadInterface() {
           <h2 className="text-xl font-semibold text-gray-900">Document Upload & Processing</h2>
           <div className="flex items-center space-x-2 text-xs text-blue-600">
             <Zap className="h-4 w-4" />
-            <span>Azure AI + OpenAI + Template Mapping + Stamp/Signature Validation</span>
+            <span>Azure AI + OpenAI + Template Mapping + Database Sync</span>
           </div>
         </div>
         
@@ -649,11 +657,11 @@ export function UploadInterface() {
               <FileImage className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">Upload Document</h3>
               <p className="mt-1 text-sm text-gray-500">
-                Select a document for intelligent processing with stamp and signature detection
+                Select a document for intelligent processing with template mapping and database sync
               </p>
               {azureServiceHealth && openAIServiceHealth && (
                 <p className="mt-1 text-xs text-blue-600">
-                  Azure AI OCR + OpenAI analysis + Automatic template field mapping + Stamp/Signature validation
+                  Azure AI OCR + OpenAI analysis + Automatic template field mapping + Supabase sync
                 </p>
               )}
               <div className="mt-6 flex justify-center space-x-4">
@@ -671,6 +679,13 @@ export function UploadInterface() {
                 >
                   <QrCode className="h-4 w-4 mr-2" />
                   Mobile Upload
+                </button>
+                <button
+                  onClick={() => setShowStampAnalyzer(true)}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <Stamp className="h-4 w-4 mr-2" />
+                  Stamp & Signature Analysis
                 </button>
               </div>
             </div>
@@ -790,25 +805,25 @@ export function UploadInterface() {
                   </div>
                 )}
 
-                {/* Stamp and Signature Status */}
                 {tempDoc.stampSignatureResult && (
-                  <div className="mb-3 grid grid-cols-2 gap-2">
-                    <div className={`p-2 rounded-md ${tempDoc.stampSignatureResult.Stamp.Status === 'Present' ? 'bg-green-50' : 'bg-gray-50'}`}>
+                  <div className="mb-3 bg-blue-50 p-2 rounded-md">
+                    <div className="flex items-center space-x-4">
                       <div className="flex items-center">
-                        <span className="text-xs font-medium">Stamp: </span>
-                        <span className={`ml-1 text-xs ${tempDoc.stampSignatureResult.Stamp.Status === 'Present' ? 'text-green-600' : 'text-gray-500'}`}>
+                        <Stamp className="h-3 w-3 mr-1 text-blue-600" />
+                        <span className={`text-xs ${tempDoc.stampSignatureResult.Stamp.Status === 'Present' ? 'text-green-600' : 'text-red-600'}`}>
                           {tempDoc.stampSignatureResult.Stamp.Status}
                         </span>
-                        {tempDoc.stampSignatureResult.StampValidation === 'Y' && (
-                          <span className="ml-2 text-xs bg-green-100 text-green-800 px-1 rounded">Valid</span>
-                        )}
                       </div>
-                    </div>
-                    <div className={`p-2 rounded-md ${tempDoc.stampSignatureResult.Signature.Status === 'Present' ? 'bg-blue-50' : 'bg-gray-50'}`}>
                       <div className="flex items-center">
-                        <span className="text-xs font-medium">Signature: </span>
-                        <span className={`ml-1 text-xs ${tempDoc.stampSignatureResult.Signature.Status === 'Present' ? 'text-blue-600' : 'text-gray-500'}`}>
+                        <PenTool className="h-3 w-3 mr-1 text-blue-600" />
+                        <span className={`text-xs ${tempDoc.stampSignatureResult.Signature.Status === 'Present' ? 'text-green-600' : 'text-red-600'}`}>
                           {tempDoc.stampSignatureResult.Signature.Status}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <Shield className="h-3 w-3 mr-1 text-blue-600" />
+                        <span className={`text-xs ${tempDoc.stampSignatureResult.StampValidation === 'Y' ? 'text-green-600' : 'text-red-600'}`}>
+                          {tempDoc.stampSignatureResult.StampValidation === 'Y' ? 'Valid' : 'Invalid'}
                         </span>
                       </div>
                     </div>
@@ -867,66 +882,35 @@ export function UploadInterface() {
                   </div>
                 </div>
 
-                {/* Stamp and Signature Analysis */}
                 {selectedTempDoc.stampSignatureResult && (
                   <div>
                     <h4 className="text-md font-medium text-gray-900 mb-2">Stamp & Signature Analysis</h4>
-                    <div className="bg-gray-50 rounded-lg p-3 space-y-3">
-                      <div className={`p-3 rounded-md ${selectedTempDoc.stampSignatureResult.Stamp.Status === 'Present' ? 'bg-green-50' : 'bg-gray-100'}`}>
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium">Official Stamp:</span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            selectedTempDoc.stampSignatureResult.Stamp.Status === 'Present' ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'
-                          }`}>
+                    <div className="bg-blue-50 rounded-lg p-3 text-sm">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <p className="font-medium">Stamp Detection:</p>
+                          <p className={`${selectedTempDoc.stampSignatureResult.Stamp.Status === 'Present' ? 'text-green-600' : 'text-red-600'}`}>
                             {selectedTempDoc.stampSignatureResult.Stamp.Status}
-                          </span>
+                          </p>
                         </div>
-                        {selectedTempDoc.stampSignatureResult.Stamp.Status === 'Present' && (
-                          <div className="mt-2 text-sm">
-                            <div className="flex justify-between">
-                              <span>Validation:</span>
-                              <span className={`font-medium ${selectedTempDoc.stampSignatureResult.StampValidation === 'Y' ? 'text-green-600' : 'text-red-600'}`}>
-                                {selectedTempDoc.stampSignatureResult.StampValidation === 'Y' ? 'Valid' : 'Invalid'}
-                              </span>
-                            </div>
-                            {selectedTempDoc.stampSignatureResult.MatchedStampType && (
-                              <div className="flex justify-between mt-1">
-                                <span>Matched Type:</span>
-                                <span className="font-medium text-green-600">{selectedTempDoc.stampSignatureResult.MatchedStampType}</span>
-                              </div>
-                            )}
+                        <div>
+                          <p className="font-medium">Signature Detection:</p>
+                          <p className={`${selectedTempDoc.stampSignatureResult.Signature.Status === 'Present' ? 'text-green-600' : 'text-red-600'}`}>
+                            {selectedTempDoc.stampSignatureResult.Signature.Status}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="font-medium">Stamp Validation:</p>
+                          <p className={`${selectedTempDoc.stampSignatureResult.StampValidation === 'Y' ? 'text-green-600' : 'text-red-600'}`}>
+                            {selectedTempDoc.stampSignatureResult.StampValidation === 'Y' ? 'Valid' : 'Invalid'}
+                          </p>
+                        </div>
+                        {selectedTempDoc.stampSignatureResult.MatchedStampType && (
+                          <div>
+                            <p className="font-medium">Matched Type:</p>
+                            <p className="text-green-600">{selectedTempDoc.stampSignatureResult.MatchedStampType}</p>
                           </div>
                         )}
-                      </div>
-                      
-                      <div className={`p-3 rounded-md ${selectedTempDoc.stampSignatureResult.Signature.Status === 'Present' ? 'bg-blue-50' : 'bg-gray-100'}`}>
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium">Signature:</span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            selectedTempDoc.stampSignatureResult.Signature.Status === 'Present' ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-700'
-                          }`}>
-                            {selectedTempDoc.stampSignatureResult.Signature.Status}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="p-3 rounded-md bg-purple-50">
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium">Overall Validation:</span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            selectedTempDoc.stampSignatureResult.StampValidation === 'Y' && 
-                            selectedTempDoc.stampSignatureResult.Stamp.Status === 'Present' && 
-                            selectedTempDoc.stampSignatureResult.Signature.Status === 'Present' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {selectedTempDoc.stampSignatureResult.StampValidation === 'Y' && 
-                             selectedTempDoc.stampSignatureResult.Stamp.Status === 'Present' && 
-                             selectedTempDoc.stampSignatureResult.Signature.Status === 'Present' 
-                              ? 'Complete' 
-                              : 'Incomplete'}
-                          </span>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -1113,7 +1097,7 @@ export function UploadInterface() {
               </div>
               <p className="text-sm text-gray-500 mb-4">
                 Scan this QR code with your mobile device to upload documents directly from your phone camera.
-                Documents will be processed with Azure AI and OpenAI with automatic template mapping and stamp/signature validation.
+                Documents will be processed with Azure AI and OpenAI with automatic template mapping and database sync.
               </p>
               <button
                 onClick={() => setShowQrModal(false)}

@@ -15,6 +15,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { stampSignatureService, StampSignatureAnalysisResult } from '../../services/stampSignatureService';
 
 // Define the expected response format
 interface StampAnalysisResult {
@@ -25,13 +26,6 @@ interface StampAnalysisResult {
 interface SignatureAnalysisResult {
   Status: 'Present' | 'Absent';
   Coordinates: [number, number, number, number] | null;
-}
-
-interface AnalysisResult {
-  Stamp: StampAnalysisResult;
-  Signature: SignatureAnalysisResult;
-  StampValidation: 'Y' | 'N';
-  MatchedStampType?: string;
 }
 
 // Master list of official stamps for validation
@@ -49,7 +43,7 @@ export function StampSignatureAnalyzer() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<StampSignatureAnalysisResult | null>(null);
   const [error, setError] = useState('');
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -74,12 +68,8 @@ export function StampSignatureAnalyzer() {
     setError('');
 
     try {
-      // In a real implementation, this would call an API
-      // For this demo, we'll simulate the analysis with a timeout
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Simulate analysis result
-      const result: AnalysisResult = simulateAnalysis();
+      // Call the stamp signature service
+      const result = await stampSignatureService.analyzeStampsAndSignatures(selectedFile, user.id);
       setAnalysisResult(result);
       
       // Draw bounding boxes on canvas if not PDF
@@ -94,38 +84,7 @@ export function StampSignatureAnalyzer() {
     }
   };
 
-  const simulateAnalysis = (): AnalysisResult => {
-    // Always simulate finding a stamp for demo purposes
-    const hasStamp = true;
-    
-    // Simulate signature detection (80% chance of finding a signature)
-    const hasSignature = Math.random() < 0.8;
-    
-    // Always validate stamp as true for demo purposes
-    const isValidStamp = true;
-    
-    // Get random stamp type from master list
-    const matchedStampType = OFFICIAL_STAMPS[Math.floor(Math.random() * OFFICIAL_STAMPS.length)];
-    
-    return {
-      Stamp: {
-        Status: hasStamp ? 'Present' : 'Absent',
-        Coordinates: hasStamp 
-          ? [100, 100, 200, 100] // x, y, width, height
-          : null
-      },
-      Signature: {
-        Status: hasSignature ? 'Present' : 'Absent',
-        Coordinates: hasSignature 
-          ? [300, 400, 150, 50] // x, y, width, height
-          : null
-      },
-      StampValidation: isValidStamp ? 'Y' : 'N',
-      MatchedStampType: matchedStampType
-    };
-  };
-
-  const drawBoundingBoxes = (result: AnalysisResult) => {
+  const drawBoundingBoxes = (result: StampSignatureAnalysisResult) => {
     if (!canvasRef.current || !previewUrl) return;
 
     const canvas = canvasRef.current;
