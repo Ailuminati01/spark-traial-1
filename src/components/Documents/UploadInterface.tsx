@@ -682,9 +682,9 @@ export function UploadInterface() {
               <p className="mt-1 text-sm text-gray-500">
                 Select a document for intelligent processing with template mapping and database sync
               </p>
-              {azureServiceHealth && openAIServiceHealth && (
+              {ollamaServiceHealth && openAIServiceHealth && (
                 <p className="mt-1 text-xs text-blue-600">
-                  Azure AI OCR + OpenAI analysis + Automatic template field mapping + Supabase sync
+                  Ollama moondream + OpenAI analysis + Automatic template field mapping + Supabase sync
                 </p>
               )}
               <div className="mt-6 flex justify-center space-x-4">
