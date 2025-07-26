@@ -216,12 +216,13 @@ export function UploadInterface() {
       // Refresh temporary documents list
       loadTemporaryDocuments();
       
-      // Reset form
-      setSelectedFile(null);
-      setPreviewUrl('');
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      // Don't reset form immediately - keep preview visible
+      // User can select another file or the preview will be cleared when they do
+      // setSelectedFile(null);
+      // setPreviewUrl('');
+      // if (fileInputRef.current) {
+      //   fileInputRef.current.value = '';
+      // }
       
     } catch (error) {
       console.error('Document processing failed:', error);
