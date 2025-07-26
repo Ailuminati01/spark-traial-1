@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useDocuments } from '../../contexts/DocumentContext';
 import { azureAIService, AzureAIResult } from '../../services/azureAIService';
 import { openAIService, OpenAIAnalysisResult } from '../../services/openAIService';
+import { ollamaService, OllamaTextExtractionResult } from '../../services/ollamaService';
 import { temporaryStorageService, TemporaryDocument } from '../../services/temporaryStorageService';
 import { databaseService, StoredDocument } from '../../services/databaseService';
 import { supabaseService } from '../../services/supabaseService';
