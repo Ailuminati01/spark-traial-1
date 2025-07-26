@@ -403,7 +403,7 @@ export function UploadInterface() {
             textClarity: ollamaResult.confidence,
             imageQuality: 0.8,
             layoutComplexity: 0.5,
-            ocrConfidence: selectedTempDoc.azureAIResult.confidence
+            ocrConfidence: ollamaResult.confidence
           }
         },
         metadata: {
