@@ -164,17 +164,17 @@ export function UploadInterface() {
     if (!user) return;
     
     setIsProcessing(true);
-    setProcessingStage('Initializing Azure AI processing...');
+    setProcessingStage('Initializing Ollama processing...');
     
     try {
-      // Step 1: Azure AI OCR processing
-      setProcessingStage('Extracting text with Azure AI...');
-      const azureResult: AzureAIResult = await azureAIService.processDocument(file, user.id);
+      // Step 1: Ollama text extraction using moondream
+      setProcessingStage('Extracting text with Ollama moondream...');
+      const ollamaResult: OllamaTextExtractionResult = await ollamaService.extractTextFromDocument(file, user.id);
 
       // Step 2: OpenAI analysis with template matching
       setProcessingStage('Analyzing document and mapping fields with OpenAI...');
       const openAIResult: OpenAIAnalysisResult = await openAIService.analyzeDocument(
-        azureResult.extractedText,
+        ollamaResult.extractedText,
         documentTypes,
         user.id
       );
@@ -185,10 +185,27 @@ export function UploadInterface() {
 
       // Step 4: Store in temporary cache
       setProcessingStage('Storing for review...');
+      
+      // Convert Ollama result to Azure format for compatibility
+      const compatibleResult = {
+        extractedText: ollamaResult.extractedText,
+        confidence: ollamaResult.confidence,
+        pages: ollamaResult.pages.map(page => ({
+          pageNumber: page.pageNumber,
+          width: page.width,
+          height: page.height,
+          lines: [{ content: page.extractedText, boundingBox: [] }],
+          words: []
+        })),
+        tables: [],
+        keyValuePairs: [],
+        processingTime: ollamaResult.processingTime
+      };
+
       const tempDocId = temporaryStorageService.storeTemporaryDocument(
         file,
-        azureResult.extractedText,
-        azureResult,
+        ollamaResult.extractedText,
+        compatibleResult,
         openAIResult,
         user.id,
         stampSignatureResult
