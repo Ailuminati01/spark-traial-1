@@ -43,16 +43,19 @@ export function UploadInterface() {
     try {
       const azureHealth = await azureAIService.checkServiceHealth();
       const openAIHealth = await openAIService.checkServiceHealth();
+      const ollamaHealth = await ollamaService.checkServiceHealth();
       const supabaseHealthCheck = await supabaseService.checkConnection();
       const stampServiceHealth = await stampSignatureService.checkServiceHealth();
       
       setAzureServiceHealth(azureHealth);
       setOpenAIServiceHealth(openAIHealth);
+      setOllamaServiceHealth(ollamaHealth);
       setSupabaseHealth(supabaseHealthCheck);
       
       console.log('Service Health Check Results:', {
         azure: azureHealth,
         openAI: openAIHealth,
+        ollama: ollamaHealth,
         supabase: supabaseHealthCheck,
         stampService: stampServiceHealth
       });
@@ -60,6 +63,7 @@ export function UploadInterface() {
       console.error('Service health check failed:', error);
       setAzureServiceHealth(false);
       setOpenAIServiceHealth(false);
+      setOllamaServiceHealth(false);
       setSupabaseHealth(false);
     }
   };
