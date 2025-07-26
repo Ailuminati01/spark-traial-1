@@ -407,7 +407,7 @@ export function UploadInterface() {
           }
         },
         metadata: {
-          processingMethod: 'azure-ai-openai-template-mapped',
+          processingMethod: 'ollama-openai-template-mapped',
           layout: [],
           tables: selectedTempDoc.azureAIResult.tables || [],
           documentMetadata: {
