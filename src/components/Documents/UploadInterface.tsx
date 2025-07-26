@@ -593,15 +593,15 @@ export function UploadInterface() {
     <div className="space-y-6">
       {/* Service Status */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className={`rounded-lg p-4 ${getServiceStatusColor(azureServiceHealth)}`}>
+        <div className={`rounded-lg p-4 ${getServiceStatusColor(ollamaServiceHealth)}`}>
           <div className="flex items-center">
-            <Zap className={`h-5 w-5 mr-2 ${getServiceStatusIcon(azureServiceHealth)}`} />
+            <Zap className={`h-5 w-5 mr-2 ${getServiceStatusIcon(ollamaServiceHealth)}`} />
             <div>
-              <p className={`text-sm font-medium ${getServiceStatusIcon(azureServiceHealth).replace('text-', 'text-')}`}>
-                {getServiceStatusText(azureServiceHealth, 'Azure AI')}
+              <p className={`text-sm font-medium ${getServiceStatusIcon(ollamaServiceHealth).replace('text-', 'text-')}`}>
+                {getServiceStatusText(ollamaServiceHealth, 'Ollama')}
               </p>
-              <p className={`text-xs ${getServiceStatusIcon(azureServiceHealth).replace('text-', 'text-').replace('600', '700')}`}>
-                {azureServiceHealth === null ? 'Verifying service connection...' : azureServiceHealth ? 'Ready for OCR processing' : 'OCR service unavailable'}
+              <p className={`text-xs ${getServiceStatusIcon(ollamaServiceHealth).replace('text-', 'text-').replace('600', '700')}`}>
+                {ollamaServiceHealth === null ? 'Verifying moondream model...' : ollamaServiceHealth ? 'Ready for text extraction' : 'Moondream model unavailable'}
               </p>
             </div>
           </div>
