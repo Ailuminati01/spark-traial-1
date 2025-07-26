@@ -140,6 +140,20 @@ export function UploadInterface() {
     }
   };
 
+  const handleSelectAnother = () => {
+    // Clear current preview and file
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setSelectedFile(null);
+    setPreviewUrl('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    // Open file dialog
+    fileInputRef.current?.click();
+  };
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
