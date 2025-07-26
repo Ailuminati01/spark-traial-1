@@ -409,7 +409,7 @@ export function UploadInterface() {
         metadata: {
           processingMethod: 'ollama-openai-template-mapped',
           layout: [],
-          tables: selectedTempDoc.azureAIResult.tables || [],
+          tables: compatibleResult.tables || [],
           documentMetadata: {
             templateMatched: selectedTempDoc.suggestedTemplate?.name,
             templateConfidence: selectedTempDoc.confidence,
