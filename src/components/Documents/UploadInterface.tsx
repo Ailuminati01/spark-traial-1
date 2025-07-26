@@ -400,16 +400,16 @@ export function UploadInterface() {
           },
           qualityMetrics: {
             overallQuality: selectedTempDoc.confidence,
-            textClarity: ollamaResult.confidence,
+            textClarity: selectedTempDoc.azureAIResult?.confidence || selectedTempDoc.confidence,
             imageQuality: 0.8,
             layoutComplexity: 0.5,
-            ocrConfidence: ollamaResult.confidence
+            ocrConfidence: selectedTempDoc.azureAIResult?.confidence || selectedTempDoc.confidence
           }
         },
         metadata: {
           processingMethod: 'ollama-openai-template-mapped',
           layout: [],
-          tables: compatibleResult.tables || [],
+          tables: selectedTempDoc.azureAIResult?.tables || [],
           documentMetadata: {
             templateMatched: selectedTempDoc.suggestedTemplate?.name,
             templateConfidence: selectedTempDoc.confidence,
