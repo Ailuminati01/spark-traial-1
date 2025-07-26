@@ -37,7 +37,14 @@ export function UploadInterface() {
   React.useEffect(() => {
     checkServiceHealth();
     loadTemporaryDocuments();
-  }, []);
+    
+    // Cleanup function to revoke object URLs on unmount
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const checkServiceHealth = async () => {
     try {
