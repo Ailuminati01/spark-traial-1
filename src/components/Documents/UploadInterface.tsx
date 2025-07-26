@@ -743,7 +743,7 @@ export function UploadInterface() {
               
               <div className="flex space-x-2">
                 <button
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={handleSelectAnother}
                   className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                 >
                   <Camera className="h-4 w-4 mr-2" />
