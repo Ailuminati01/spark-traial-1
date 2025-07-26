@@ -21,6 +21,7 @@ export function UploadInterface() {
   const [processingStage, setProcessingStage] = useState<string>('');
   const [azureServiceHealth, setAzureServiceHealth] = useState<boolean | null>(null);
   const [openAIServiceHealth, setOpenAIServiceHealth] = useState<boolean | null>(null);
+  const [ollamaServiceHealth, setOllamaServiceHealth] = useState<boolean | null>(null);
   const [supabaseHealth, setSupabaseHealth] = useState<boolean | null>(null);
   const [temporaryDocuments, setTemporaryDocuments] = useState<TemporaryDocument[]>([]);
   const [selectedTempDoc, setSelectedTempDoc] = useState<TemporaryDocument | null>(null);
